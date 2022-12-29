@@ -15,21 +15,20 @@ pub fn decode_lahd(
         ppb = 4;
     }
 
-    let b_width = texture.width / ppb;
-    let b_height = texture.height / ppb;
+    let b_width = (texture.width + 3) / ppb;
+    let b_height = (texture.height + 3) / ppb;
     let surface_size = b_width * b_height * bpp;
     let aligned_surface_size = b_width * round_up_pow_two(b_height) * bpp;
 
-    let bpp_shift = num_leading_zeros(bpp);
-    let line_shift = find_last_bit_index(b_width * bpp) - 1;
+    let xb = num_leading_zeros(round_up_pow_two(b_width));
+    let mut yb = num_leading_zeros(round_up_pow_two(b_height));
+    let hh = round_up_pow_two(b_height) >> 1;
 
-    let mut x_bits_shift = 3;
-    let h_bit_mask = round_up_pow_two(b_height) - 1;
-    for i in 3u32..7u32 {
-        if (h_bit_mask & (1 << i)) != 0 {
-            x_bits_shift += 1;
-        }
+    if (b_height & (b_height - 1)) != 0 && b_height <= hh + hh / 3 && yb > 3 {
+        yb -= 1;
     }
+
+    let width = round_size(b_width, 64 >> 4);
 
     let num_slices: u32 = cmp::max(texture.depth as u32, 1);
 
@@ -37,17 +36,9 @@ pub fn decode_lahd(
         let input_addr = surface_size * slice;
         let output_addr = aligned_surface_size * slice;
 
-        for w in 0..b_width {
-            for h in 0..b_height {
-                let x = w << bpp_shift;
-                let addr = (h & Y_BITS_TAIL) << line_shift |
-                           ((h & Y_BITS_9_12) << 6) |
-                           ((h & Y_BITS_6_7) << 5) |
-                           ((h & Y_BITS_HEAD) << 4) |
-                           ((x & X_BITS_TAIL) << x_bits_shift) |
-                           ((x & X_BITS_EIGHTH) << 3) |
-                           ((x & X_BITS_FITH) << 1) |
-                           (x & X_BITS_0_3);
+        for h in 0..b_height {
+            for w in 0..b_width {
+                let addr = get_addr(w, h, xb, yb, width) * bpp;
 
                 if addr + bpp > aligned_surface_size {
                     continue;
@@ -75,34 +66,6 @@ fn num_leading_zeros(
         num_zeros += 1;
     }
     num_zeros
-}
-
-fn find_last_bit(
-        value: u32
-) -> u32 {
-    let mut value = value;
-    let mut last_bit = 0u32;
-    let mut index = 0u32;
-    while value != 0 {
-        if (value & 1) != 0 {
-            last_bit = 1 << index;
-        }
-        value >>= 1;
-        index += 1;
-    }
-    last_bit
-}
-
-fn find_last_bit_index(
-        value: u32
-) -> u32 {
-    let mut value = value;
-    let mut index = 0u32;
-    while value != 0 {
-        value >>= 1;
-        index += 1;
-    }
-    index
 }
 
 fn round_up_pow_two(
@@ -166,12 +129,3 @@ fn get_addr(
     addr |= (x + y * (width >> x_used)) << (x_used + y_used);
     addr
 }
-
-const Y_BITS_TAIL: u32 = 0b1111111110000000;
-const Y_BITS_9_12: u32 = 0b0000000001111000;
-const Y_BITS_6_7: u32 = 0b0000000000000110;
-const Y_BITS_HEAD: u32 = 0b0000000000000001;
-const X_BITS_TAIL: u32 = 0b1111111111000000;
-const X_BITS_EIGHTH: u32 = 0b0000000000100000;
-const X_BITS_FITH: u32 = 0b0000000000010000;
-const X_BITS_0_3: u32 = 0b0000000000001111;

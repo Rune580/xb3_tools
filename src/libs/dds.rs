@@ -16,13 +16,13 @@ pub fn write_dds(
     let mut writer = BinaryWriter::new(&mut fs, binary_rw::Endian::Little);
 
     // Header
-    writer.write_u32(0x20534444);
+    writer.write_u32(0x20534444).expect("Failed to write to file!");
     let normal_header = DDSHeader::new(texture);
     normal_header.serialize(&mut writer);
-    deafult_dx10_header.serialize(&mut writer);
+    DEAFULT_DX10_HEADER.serialize(&mut writer);
 
     // Texture
-    writer.write_bytes(texture.raw.to_owned());
+    writer.write_bytes(texture.raw.to_owned()).expect("Failed to write to file!");
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -56,7 +56,7 @@ impl DDSHeader {
             pitch_or_linear_size: pitch,
             depth: texture.depth as u32,
             mip_map_count: 0,
-            pixel_format: default_pixel_format,
+            pixel_format: DEFAULT_PIXEL_FORMAT,
             caps1: 0x1000,
             caps2: 0x0,
             caps3: 0x0,
@@ -68,26 +68,26 @@ impl DDSHeader {
 
 impl BinarySerializable for DDSHeader {
     fn serialize(&self, writer: &mut BinaryWriter) {
-        writer.write_u32(124);
-        writer.write_u32(self.flags);
-        writer.write_u32(self.height);
-        writer.write_u32(self.width);
-        writer.write_u32(self.pitch_or_linear_size);
-        writer.write_u32(self.depth);
-        writer.write_u32(self.mip_map_count);
-        for i in 0..11 {
-            writer.write_u32(0);
+        writer.write_u32(124).expect("Failed to write to file!");
+        writer.write_u32(self.flags).expect("Failed to write to file!");
+        writer.write_u32(self.height).expect("Failed to write to file!");
+        writer.write_u32(self.width).expect("Failed to write to file!");
+        writer.write_u32(self.pitch_or_linear_size).expect("Failed to write to file!");
+        writer.write_u32(self.depth).expect("Failed to write to file!");
+        writer.write_u32(self.mip_map_count).expect("Failed to write to file!");
+        for _i in 0..11 {
+            writer.write_u32(0).expect("Failed to write to file!");
         }
         self.pixel_format.serialize(writer);
-        writer.write_u32(self.caps1);
-        writer.write_u32(self.caps2);
-        writer.write_u32(self.caps3);
-        writer.write_u32(self.caps4);
-        writer.write_u32(self.reserved2);
+        writer.write_u32(self.caps1).expect("Failed to write to file!");
+        writer.write_u32(self.caps2).expect("Failed to write to file!");
+        writer.write_u32(self.caps3).expect("Failed to write to file!");
+        writer.write_u32(self.caps4).expect("Failed to write to file!");
+        writer.write_u32(self.reserved2).expect("Failed to write to file!");
     }
 }
 
-const default_pixel_format: DDSPixelFormat = DDSPixelFormat {
+const DEFAULT_PIXEL_FORMAT: DDSPixelFormat = DDSPixelFormat {
     flags: 0x04,
     four_cc: 0x30315844,
     rgb_bit_count: 0,
@@ -110,18 +110,18 @@ struct  DDSPixelFormat {
 
 impl BinarySerializable for DDSPixelFormat {
     fn serialize(&self, writer: &mut BinaryWriter) {
-        writer.write_u32(32);
-        writer.write_u32(self.flags);
-        writer.write_u32(self.four_cc);
-        writer.write_u32(self.rgb_bit_count);
-        writer.write_u32(self.r_bit_mask);
-        writer.write_u32(self.g_bit_mask);
-        writer.write_u32(self.b_bit_mask);
-        writer.write_u32(self.a_bit_mask);
+        writer.write_u32(32).expect("Failed to write to file!");
+        writer.write_u32(self.flags).expect("Failed to write to file!");
+        writer.write_u32(self.four_cc).expect("Failed to write to file!");
+        writer.write_u32(self.rgb_bit_count).expect("Failed to write to file!");
+        writer.write_u32(self.r_bit_mask).expect("Failed to write to file!");
+        writer.write_u32(self.g_bit_mask).expect("Failed to write to file!");
+        writer.write_u32(self.b_bit_mask).expect("Failed to write to file!");
+        writer.write_u32(self.a_bit_mask).expect("Failed to write to file!");
     }
 }
 
-const deafult_dx10_header: DDSHeaderDX10 = DDSHeaderDX10 {
+const DEAFULT_DX10_HEADER: DDSHeaderDX10 = DDSHeaderDX10 {
     format: 98,
     dimension: 3,
     misc_flag1: 0x0,
@@ -140,11 +140,11 @@ struct DDSHeaderDX10 {
 
 impl BinarySerializable for DDSHeaderDX10 {
     fn serialize(&self, writer: &mut BinaryWriter) {
-        writer.write_u32(self.format);
-        writer.write_u32(self.dimension);
-        writer.write_u32(self.misc_flag1);
-        writer.write_u32(self.array_size);
-        writer.write_u32(self.misc_flag2);
+        writer.write_u32(self.format).expect("Failed to write to file!");
+        writer.write_u32(self.dimension).expect("Failed to write to file!");
+        writer.write_u32(self.misc_flag1).expect("Failed to write to file!");
+        writer.write_u32(self.array_size).expect("Failed to write to file!");
+        writer.write_u32(self.misc_flag2).expect("Failed to write to file!");
     }
 }
 
