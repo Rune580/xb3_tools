@@ -4,7 +4,7 @@
             "type": "cargo",
             "name": "Run",
             "cargoArgs": ["run"],
-            "executableArgs": ["-t", "wilay-decode", "-i", "/1TB-SSD/Xenoblade 3/romfs/bf3/menu/image/icon_button_y.wilay", "-o", "$USER_HOME$/Downloads/compressonatorcli/result.dds"],
+            "executableArgs": ["wilay-decode", "-i", "/1TB-SSD/Xenoblade 3/romfs/bf3/menu/image/icon_button_y.wilay", "-o", "$USER_HOME$/Downloads/compressonatorcli/result.dds"],
         },
     ]
 }

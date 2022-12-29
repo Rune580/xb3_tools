@@ -1,6 +1,7 @@
 use std::{path::Path, fs};
 
 use binary_reader::BinaryReader;
+use clap::Parser;
 
 use super::{textures::LahdTexture, dds::write_dds, lbim, swizzler};
 
