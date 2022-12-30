@@ -1,9 +1,8 @@
 use std::{path::Path, fs};
 
 use binary_reader::BinaryReader;
-use clap::Parser;
 
-use super::{textures::LahdTexture, dds::write_dds, lbim, swizzler};
+use super::{textures::LahdTexture, dds::write_dds, lbim};
 
 pub fn decode_wilay(
     file_path_string: String,
@@ -64,8 +63,6 @@ pub fn decode_wilay(
             field34: reader.read_i32().unwrap(),
             raw: raw
         };
-
-        //swizzler::deswizzle(&mut texture);
 
         lbim::decode_lahd(&mut texture);
 

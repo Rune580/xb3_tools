@@ -19,8 +19,8 @@
                     "kind": "bin"
                 }
             },
-            "args": ["wilay-decode", "-i", "/1TB-SSD/Xenoblade 3/romfs/bf3/menu/image/icon_button_y.wilay", "-o", "./test.dds"],
-            "cwd": "${workspaceFolder}"
+            "args": ["wilay-decode", "-f", "png", "--in", "input/", "--out", "output/"],
+            "cwd": "${workspaceFolder}/target/debug"
         },
         {
             "type": "lldb",
