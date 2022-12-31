@@ -19,7 +19,7 @@
                     "kind": "bin"
                 }
             },
-            "args": ["wilay-decode", "-f", "png", "--in", "input/", "--out", "output/"],
+            "args": ["wilay-decode", "-f", "png", "-i", "input/", "-o", "output/"],
             "cwd": "${workspaceFolder}/target/debug"
         },
         {

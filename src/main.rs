@@ -8,7 +8,7 @@ fn main() {
 
     match args.task {
         ToolTask::WilayDecode(decode_args) => {
-            tasks::decode_wilay(decode_args.io, decode_args.format);
+            tasks::execute_decode_wilay(decode_args.io, decode_args.format, args.max_threads);
 //            wilay::decode_wilay(decode_args.input_file, decode_args.output_file)
         },
         ToolTask::WilayEncode => todo!(),

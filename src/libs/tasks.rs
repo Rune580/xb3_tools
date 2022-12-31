@@ -1,54 +1,108 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 
+use workerpool::Pool;
+use workerpool::thunk::{ThunkWorker, Thunk};
+
 use super::cli::InputOutputArgs;
-use super::files::TextureOutputFormat;
+use super::files::{TextureOutputFormat, InputOutputPair, InputOutputLayout};
 use super::{wilay, compressonator};
 
-pub fn decode_wilay(
+pub fn execute_decode_wilay(
         io_args: InputOutputArgs,
-        format: TextureOutputFormat
+        format: TextureOutputFormat,
+        max_threads: usize
 ) {
     io_args.assert_valid_args();
 
-    if io_args.input_file.is_some() {
-        let input_file = io_args.input_file.as_ref().unwrap().to_owned();
-        let output_file = io_args.get_output_file(".dds".to_string()).expect("failed to process task!");
+    let io = io_args.to_input_output_pair();
+    let input = io.input.clone();
+    let output = io.output.clone();
+    let layout = io.layout;
 
-        decode_wilay_internal(input_file, output_file, format);
-    } else if io_args.input_dir.is_some() {
-        let input_dir = Path::new(io_args.input_dir.as_ref().unwrap());
-        let output_dir = PathBuf::from(io_args.output_dir.as_ref().unwrap());
+    let out_dir = get_output_dir(io.output.clone());
 
-        if !input_dir.is_dir() {
-            panic!()
-        }
+    if out_dir.exists() {
+        fs::remove_dir_all(&out_dir).unwrap();
+    }
 
-        if !output_dir.exists() {
-            fs::create_dir(&output_dir).unwrap();
-        }
+    let need_decompress = matches!(format, TextureOutputFormat::Png);
+    let mut temp_dir = out_dir.clone();
+    if need_decompress {
+        temp_dir = temp_dir.join("temp/");
+    }
 
-        for path in fs::read_dir(input_dir).unwrap() {
-            let path = path.unwrap().path();
-            let input_file = path.clone().to_str().unwrap().to_string();
-            let output_file = format!("{}.dds", path.file_stem().unwrap().to_str().unwrap());
-            let output_file = output_dir.join(output_file);
+    if !temp_dir.exists() {
+        fs::create_dir_all(&temp_dir).unwrap();
+    }
 
-            decode_wilay_internal(input_file, output_file.to_str().unwrap().to_string(), format.clone())
-        }
+    match layout {
+        InputOutputLayout::FileInFileOut => {
+            let output = temp_dir.join(output.file_stem().unwrap()).with_extension("dds");
+            decode_wilay_internal(&input, &output, &out_dir, layout, format);
+        },
+        InputOutputLayout::FileInDirOut => {
+            let output = temp_dir.join(input.file_stem().unwrap()).with_extension("dds");
+            decode_wilay_internal(&input, &output, &out_dir, layout, format);
+        },
+        InputOutputLayout::DirInDirOut => {
+            let pool = Pool::<ThunkWorker<()>>::new(max_threads);
+
+            for path in fs::read_dir(&input).unwrap() {
+                let path = path.unwrap().path();
+                if !path.is_file() {
+                    continue;
+                }
+                if path.extension().unwrap() != "wilay" {
+                    continue;
+                }
+
+                let output = temp_dir.clone().join(path.file_stem().unwrap()).with_extension("dds");
+                let out_dir_static = out_dir.clone();
+                let layout_static = layout.clone();
+                let format_static = format.clone();
+                pool.execute(Thunk::of(move || decode_wilay_internal(path, output, out_dir_static, layout_static, format_static)));
+            }
+
+            pool.join();
+        },
     }
 }
 
-fn decode_wilay_internal(
-        input_file: String,
-        output_file: String,
-        format: TextureOutputFormat
-) {
-    wilay::decode_wilay(input_file, output_file.clone());
+fn get_output_dir<P>(
+        output: P
+) -> PathBuf
+where P: AsRef<Path> {
+    let output = output.as_ref().to_path_buf();
+    let output = if output.is_dir() {
+        output
+    } else if output.is_file() {
+        output.parent().unwrap().to_path_buf()
+    } else {
+      panic!();
+    };
+    output
+}
 
-    let out_dir = Path::new(&output_file).parent().expect("failed");
+fn decode_wilay_internal<P, Q, R>(
+        input: P,
+        output: Q,
+        out_dir: R,
+        layout: InputOutputLayout,
+        format: TextureOutputFormat
+)
+where P: AsRef<Path>, Q: AsRef<Path>, R: AsRef<Path> {
+    let input = input.as_ref().to_path_buf();
+
+    let io = InputOutputPair::new(&input, &output, layout);
+    let result = wilay::decode_wilay(io);
+
+    if result.is_err() {
+        println!("failed to decode {} with err: {}", input.to_str().unwrap(), result.err().unwrap());
+        return;
+    }
 
     if matches!(format, TextureOutputFormat::Png) {
-        compressonator::decompress_dds(output_file.clone(), out_dir)
+        compressonator::decompress_dds(output, out_dir)
     }
 }

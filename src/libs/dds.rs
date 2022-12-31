@@ -7,11 +7,12 @@ use binary_rw::{
 
 use super::textures::LahdTexture;
 
-pub fn write_dds(
+pub fn write_dds<P>(
         texture: &LahdTexture,
-        out_file: &String
-) {
-    let file = File::create(Path::new(&out_file)).expect("Failed to create dds file!");
+        out_file: P
+)
+where P: AsRef<Path> {
+    let file = File::create(out_file).expect("Failed to create dds file!");
     let mut fs = FileStream::new(file);
     let mut writer = BinaryWriter::new(&mut fs, binary_rw::Endian::Little);
 

@@ -9,3 +9,4 @@ edition = "2021"
 clap = { version = "4.0.30", features = [ "derive" ]}
 binary-reader = "0.4.5"
 binary_rw = "4.0.4"
+workerpool = "1.2.0"
